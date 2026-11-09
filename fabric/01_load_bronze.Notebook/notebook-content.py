@@ -66,3 +66,53 @@ for table in tables:
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+import com.microsoft.sqlserver.jdbc.spark
+from pyspark.sql.functions import current_timestamp
+
+# připojení ke zdrojové databázi
+url = "jdbc:sqlserver://wosfckz7iqdejdfedecwu6neiq-rn6ftjrgxlbufhaldgmeqjfm2q.database.fabric.microsoft.com:1433;database=SQL_4IT433-efca03d8-ca80-4f51-83bd-7b3baed3c015;"
+
+tables = [
+    "CESTUJICI", 
+    "CLAIM_REKLAMACE_POKUTY", 
+    "COLLECTION_VYMAHANI", 
+    "PLATBA", 
+    "PODNET_CESTUJICIHO", 
+    "POHLEDAVKA", 
+    "PREPRAVNI_KONTROLA", 
+    "REFUND", 
+    "REVIZOR"
+]
+
+# Porovnání počtu řádků ve zdroji a v již načtených tabulkách Bronze
+readme_rows = [
+    "| Tabulka ve zdroji | Počet ve zdroji | Počet v Bronze | Výsledek |",
+    "| --- | ---: | ---: | --- |",
+]
+
+for table in tables:
+    source_table = f"dbo.{table}"
+    bronze_table = f"bronze_{table.lower()}"
+
+    #spočtení řádků v SQ databázi a tabulce v lakehouse
+    source_count = spark.read.option("url", url).mssql(source_table).count()
+    bronze_count = spark.table(bronze_table).count()
+
+    #porovnání počtů řádků
+    status = "OK" if source_count == bronze_count else "NESHODA"
+    readme_rows.append(
+        f"| {source_table} | {source_count} | {bronze_count} | {status} |"
+    )
+
+#vypsání kontrolní tabulky
+print("\n".join(readme_rows))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
